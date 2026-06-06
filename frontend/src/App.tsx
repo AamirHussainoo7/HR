@@ -7,6 +7,7 @@ import Analytics from "./components/Analytics";
 import OnboardingView from "./components/Onboarding";
 import SuperadminPanel from "./components/SuperadminPanel";
 import { UserRole, User, Resume, Interview, OnboardingTemplate, Onboarding } from "./types";
+import { apiUrl } from "./api";
 
 export default function App() {
   const [user, setUser] = useState<{ id: string; name: string; email: string; role: UserRole; department: string } | null>(null);
@@ -16,7 +17,7 @@ export default function App() {
 
   useEffect(() => {
     const checkDb = () => {
-      fetch("/api/db/status")
+      fetch(apiUrl("/api/db/status"))
         .then((res) => res.json())
         .then((data) => setDbStatus(data))
         .catch((err) => console.error("Failed to check database connection status:", err));
@@ -35,7 +36,7 @@ export default function App() {
   // Authenticate session on load
   useEffect(() => {
     if (authToken) {
-      fetch("/api/auth/current", {
+      fetch(apiUrl("/api/auth/current"), {
         headers: { "Authorization": `Bearer ${authToken}` }
       })
         .then((res) => {
@@ -67,17 +68,17 @@ export default function App() {
     try {
       // 1. Resumes (only for staff roles)
       if (user.role !== "candidate") {
-        const resumesRes = await fetch("/api/resumes", { headers });
+        const resumesRes = await fetch(apiUrl("/api/resumes"), { headers });
         if (resumesRes.ok) setResumes(await resumesRes.json());
 
-        const templatesRes = await fetch("/api/onboarding/templates", { headers });
+        const templatesRes = await fetch(apiUrl("/api/onboarding/templates"), { headers });
         if (templatesRes.ok) setTemplates(await templatesRes.json());
 
-        const onboardingsRes = await fetch("/api/onboarding", { headers });
+        const onboardingsRes = await fetch(apiUrl("/api/onboarding"), { headers });
         if (onboardingsRes.ok) setOnboardings(await onboardingsRes.json());
       } else {
         // Candidate role only pulls their personalized onboarding checklist
-        const onboardCandidateRes = await fetch("/api/onboarding/candidate", { headers });
+        const onboardCandidateRes = await fetch(apiUrl("/api/onboarding/candidate"), { headers });
         if (onboardCandidateRes.ok) {
           const singleOb = await onboardCandidateRes.json();
           setOnboardings([singleOb]);
@@ -85,7 +86,7 @@ export default function App() {
       }
 
       // 2. Interviews (available for all, returns filtered candidate items internally on the server)
-      const interviewsRes = await fetch("/api/interviews", { headers });
+      const interviewsRes = await fetch(apiUrl("/api/interviews"), { headers });
       if (interviewsRes.ok) setInterviews(await interviewsRes.json());
 
     } catch (err) {

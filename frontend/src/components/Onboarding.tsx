@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   BellRing
 } from "lucide-react";
+import { apiUrl } from "../api";
 
 interface OnboardingProps {
   onboardings: Onboarding[];
@@ -70,7 +71,7 @@ export default function OnboardingView({ onboardings, templates, userRole, authT
     setLoading(true);
 
     try {
-      const response = await fetch("/api/onboarding/templates", {
+      const response = await fetch(apiUrl("/api/onboarding/templates"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -105,7 +106,7 @@ export default function OnboardingView({ onboardings, templates, userRole, authT
     setLoading(true);
 
     try {
-      const response = await fetch("/api/onboarding/start", {
+      const response = await fetch(apiUrl("/api/onboarding/start"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +140,7 @@ export default function OnboardingView({ onboardings, templates, userRole, authT
   // Move task state in Kanban flow
   const handleUpdateTaskStatus = async (onboardingId: string, taskId: string, nextStatus: "todo" | "in_progress" | "complete") => {
     try {
-      const response = await fetch(`/api/onboarding/${onboardingId}/task/${taskId}`, {
+      const response = await fetch(apiUrl(`/api/onboarding/${onboardingId}/task/${taskId}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -165,7 +166,7 @@ export default function OnboardingView({ onboardings, templates, userRole, authT
     setTriggeringCron(true);
     setCronAlertLogs(null);
     try {
-      const response = await fetch("/api/onboarding/cron-trigger", {
+      const response = await fetch(apiUrl("/api/onboarding/cron-trigger"), {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${authToken}`

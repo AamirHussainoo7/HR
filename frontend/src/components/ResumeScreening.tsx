@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Filter
 } from "lucide-react";
+import { apiUrl } from "../api";
 
 interface ResumeScreeningProps {
   resumes: Resume[];
@@ -40,7 +41,7 @@ export default function ResumeScreening({ resumes, authToken, onRefresh }: Resum
     setUploading(true);
 
     try {
-      const response = await fetch("/api/resumes/bulk-upload", {
+      const response = await fetch(apiUrl("/api/resumes/bulk-upload"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -69,7 +70,7 @@ export default function ResumeScreening({ resumes, authToken, onRefresh }: Resum
   const handleTriggerScreen = async (id: string) => {
     setScreeningId(id);
     try {
-      const response = await fetch(`/api/resumes/screen/${id}`, {
+      const response = await fetch(apiUrl(`/api/resumes/screen/${id}`), {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${authToken}`
@@ -93,7 +94,7 @@ export default function ResumeScreening({ resumes, authToken, onRefresh }: Resum
     e.stopPropagation();
     if (!confirm("Are you sure you want to delete this candidate evaluation?")) return;
     try {
-      const response = await fetch(`/api/resumes/${id}`, {
+      const response = await fetch(apiUrl(`/api/resumes/${id}`), {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${authToken}`
@@ -119,7 +120,7 @@ export default function ResumeScreening({ resumes, authToken, onRefresh }: Resum
     // Process each resume in sequence to avoid timeouts
     for (const res of pendingResumes) {
       try {
-        await fetch(`/api/resumes/screen/${res.id}`, {
+        await fetch(apiUrl(`/api/resumes/screen/${res.id}`), {
           method: "POST",
           headers: { "Authorization": `Bearer ${authToken}` }
         });

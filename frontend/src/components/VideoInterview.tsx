@@ -17,6 +17,7 @@ import {
   ChevronRight,
   AlertCircle
 } from "lucide-react";
+import { apiUrl } from "../api";
 
 interface VideoInterviewProps {
   interviews: Interview[];
@@ -99,7 +100,7 @@ export default function VideoInterview({ interviews, userRole, authToken, onRefr
     setMsg("");
 
     try {
-      const response = await fetch("/api/interviews/schedule", {
+      const response = await fetch(apiUrl("/api/interviews/schedule"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,7 +152,7 @@ export default function VideoInterview({ interviews, userRole, authToken, onRefr
 
     try {
       const qId = selectedInterview.questions[activeQuestionIdx].questionId;
-      const response = await fetch(`/api/interviews/${selectedInterview.id}/response`, {
+      const response = await fetch(apiUrl(`/api/interviews/${selectedInterview.id}/response`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -186,7 +187,7 @@ export default function VideoInterview({ interviews, userRole, authToken, onRefr
   // Pre-load dynamic list questions utilizing Gemini!
   const loadDynamicQuestions = async (intId: string) => {
     try {
-      const resp = await fetch(`/api/interviews/${intId}/questions`, {
+      const resp = await fetch(apiUrl(`/api/interviews/${intId}/questions`), {
         headers: { "Authorization": `Bearer ${authToken}` }
       });
       if (resp.ok) {

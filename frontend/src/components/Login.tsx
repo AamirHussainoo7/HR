@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { UserRole } from "../types";
 import { Briefcase, ArrowRight, Sparkles, Mail, Lock, UserPlus } from "lucide-react";
+import { apiUrl } from "../api";
 
 interface LoginProps {
   onLoginSuccess: (token: string, user: { name: string; email: string; role: UserRole; department: string }) => void;
@@ -23,7 +24,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setErrorMessage("");
     setLoading(true);
 
-    const url = isRegistering ? "/api/auth/register" : "/api/auth/login";
+    const url = isRegistering ? apiUrl("/api/auth/register") : apiUrl("/api/auth/login");
     const body = isRegistering
       ? { name, email, password, role, department }
       : { email, password };
@@ -53,7 +54,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setErrorMessage("");
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: presetEmail, password: "password" }),

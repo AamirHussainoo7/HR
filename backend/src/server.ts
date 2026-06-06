@@ -11,7 +11,7 @@ import { connectDB, User, Resume, Interview, Template, Onboarding, hashPassword,
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Database connection status route
 app.get("/api/db/status", (req, res) => {
@@ -56,7 +56,13 @@ function verifyToken(token: string): { userId: string; role: string } | null {
 }
 
 // Express configurations
-app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5174"], credentials: true }));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://hr-theta-umber.vercel.app",
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 

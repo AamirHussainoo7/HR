@@ -10,6 +10,7 @@ import {
   AlertCircle,
   HelpCircle
 } from "lucide-react";
+import { apiUrl } from "../api";
 
 interface SuperadminPanelProps {
   authToken: string;
@@ -30,7 +31,7 @@ export default function SuperadminPanel({ authToken }: SuperadminPanelProps) {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/users", {
+      const response = await fetch(apiUrl("/api/auth/users"), {
         headers: { "Authorization": `Bearer ${authToken}` }
       });
       if (response.ok) {
@@ -50,7 +51,7 @@ export default function SuperadminPanel({ authToken }: SuperadminPanelProps) {
 
   const handleUpdateUser = async (id: string, updates: Partial<User>) => {
     try {
-      const response = await fetch(`/api/auth/users/${id}`, {
+      const response = await fetch(apiUrl(`/api/auth/users/${id}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -73,7 +74,7 @@ export default function SuperadminPanel({ authToken }: SuperadminPanelProps) {
     setAlertMsg("");
 
     try {
-      const response = await fetch("/api/auth/users/invite", {
+      const response = await fetch(apiUrl("/api/auth/users/invite"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -13,6 +13,7 @@ import {
   Award,
   Sparkles
 } from "lucide-react";
+import { apiUrl } from "../api";
 
 interface AnalyticsProps {
   authToken: string;
@@ -23,7 +24,7 @@ export default function Analytics({ authToken }: AnalyticsProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/analytics/summary", {
+    fetch(apiUrl("/api/analytics/summary"), {
       headers: { "Authorization": `Bearer ${authToken}` }
     })
       .then((res) => res.json())
