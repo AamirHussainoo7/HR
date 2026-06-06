@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: wehire-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false   # Set manually in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false   # Set manually in Render dashboard
