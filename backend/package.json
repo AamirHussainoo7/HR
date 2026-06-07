@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/server.ts",
-    "build": "esbuild src/server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "dev": "node --watch src/server.js",
+    "build": "esbuild src/server.js --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs"
   },
   "dependencies": {
@@ -16,11 +16,6 @@
     "mongoose": "^9.6.3"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0",
-    "esbuild": "^0.25.0",
-    "tsx": "^4.21.0",
-    "typescript": "~5.8.2"
+    "esbuild": "^0.25.0"
   }
 }

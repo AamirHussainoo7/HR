@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "./components/Sidebar";
-import Login from "./components/Login";
-import ResumeScreening from "./components/ResumeScreening";
-import VideoInterview from "./components/VideoInterview";
-import Analytics from "./components/Analytics";
-import OnboardingView from "./components/Onboarding";
-import SuperadminPanel from "./components/SuperadminPanel";
-import { UserRole, User, Resume, Interview, OnboardingTemplate, Onboarding } from "./types";
-import { apiUrl } from "./api";
+import Sidebar from "./components/Sidebar.jsx";
+import Login from "./components/Login.jsx";
+import ResumeScreening from "./components/ResumeScreening.jsx";
+import VideoInterview from "./components/VideoInterview.jsx";
+import Analytics from "./components/Analytics.jsx";
+import OnboardingView from "./components/Onboarding.jsx";
+import SuperadminPanel from "./components/SuperadminPanel.jsx";
+import EmployeeDirectory from "./components/EmployeeDirectory.jsx";
+import AttendanceModule from "./components/Attendance.jsx";
+import PayrollModule from "./components/Payroll.jsx";
+import PerformanceTracking from "./components/PerformanceTracking.jsx";
+import { apiUrl } from "./api.js";
 
 export default function App() {
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: UserRole; department: string } | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem("synergy_auth_token"));
-  const [currentTab, setCurrentTab] = useState<string>("screenings");
-  const [dbStatus, setDbStatus] = useState<{ connected: boolean; error: string | null } | null>(null);
+  const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState(localStorage.getItem("synergy_auth_token"));
+  const [currentTab, setCurrentTab] = useState("screenings");
+  const [dbStatus, setDbStatus] = useState(null);
 
   useEffect(() => {
     const checkDb = () => {
@@ -27,13 +30,12 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Core operational datasets
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [interviews, setInterviews] = useState<Interview[]>([]);
-  const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
-  const [onboardings, setOnboardings] = useState<Onboarding[]>([]);
+  const [resumes, setResumes] = useState([]);
+  const [interviews, setInterviews] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [onboardings, setOnboardings] = useState([]);
+  const [employees, setEmployees] = useState([]);
 
-  // Authenticate session on load
   useEffect(() => {
     if (authToken) {
       fetch(apiUrl("/api/auth/current"), {
@@ -45,11 +47,10 @@ export default function App() {
         })
         .then((userData) => {
           setUser(userData);
-          // Set sensible initial tab based on role on login
           if (userData.role === "candidate") {
-            setCurrentTab("interviews");
+            setCurrentTab("attendance");
           } else {
-            setCurrentTab("screenings");
+            setCurrentTab("employees");
           }
         })
         .catch(() => {
@@ -58,15 +59,10 @@ export default function App() {
     }
   }, [authToken]);
 
-  // Fetch operational dataset triggers
   const fetchAllData = async () => {
     if (!authToken || !user) return;
-    
-    // Auth header config
     const headers = { "Authorization": `Bearer ${authToken}` };
-
     try {
-      // 1. Resumes (only for staff roles)
       if (user.role !== "candidate") {
         const resumesRes = await fetch(apiUrl("/api/resumes"), { headers });
         if (resumesRes.ok) setResumes(await resumesRes.json());
@@ -76,8 +72,10 @@ export default function App() {
 
         const onboardingsRes = await fetch(apiUrl("/api/onboarding"), { headers });
         if (onboardingsRes.ok) setOnboardings(await onboardingsRes.json());
+
+        const empRes = await fetch(apiUrl("/api/employees"), { headers });
+        if (empRes.ok) setEmployees(await empRes.json());
       } else {
-        // Candidate role only pulls their personalized onboarding checklist
         const onboardCandidateRes = await fetch(apiUrl("/api/onboarding/candidate"), { headers });
         if (onboardCandidateRes.ok) {
           const singleOb = await onboardCandidateRes.json();
@@ -85,10 +83,8 @@ export default function App() {
         }
       }
 
-      // 2. Interviews (available for all, returns filtered candidate items internally on the server)
       const interviewsRes = await fetch(apiUrl("/api/interviews"), { headers });
       if (interviewsRes.ok) setInterviews(await interviewsRes.json());
-
     } catch (err) {
       console.error("Operational data synchronization failed:", err);
     }
@@ -100,15 +96,14 @@ export default function App() {
     }
   }, [authToken, user]);
 
-  const handleLoginSuccess = (token: string, userData: { id: string; name: string; email: string; role: UserRole; department: string }) => {
+  const handleLoginSuccess = (token, userData) => {
     localStorage.setItem("synergy_auth_token", token);
     setAuthToken(token);
     setUser(userData);
-    
     if (userData.role === "candidate") {
-      setCurrentTab("interviews");
+      setCurrentTab("attendance");
     } else {
-      setCurrentTab("screenings");
+      setCurrentTab("employees");
     }
   };
 
@@ -118,7 +113,6 @@ export default function App() {
     setUser(null);
   };
 
-  // Render tab modules dynamically
   const renderTabContent = () => {
     if (!user || !authToken) return null;
 
@@ -129,24 +123,53 @@ export default function App() {
         return <VideoInterview interviews={interviews} userRole={user.role} authToken={authToken} onRefresh={fetchAllData} />;
       case "onboarding":
         return (
-          <OnboardingView 
-            onboardings={onboardings} 
-            templates={templates} 
-            userRole={user.role} 
-            authToken={authToken} 
-            onRefresh={fetchAllData} 
+          <OnboardingView
+            onboardings={onboardings}
+            templates={templates}
+            userRole={user.role}
+            authToken={authToken}
+            onRefresh={fetchAllData}
           />
         );
       case "analytics":
         return <Analytics authToken={authToken} />;
       case "superadmin":
         return <SuperadminPanel authToken={authToken} />;
-      default:
+      case "employees":
         return (
-          <div className="text-xs text-slate-500">
-            Operational area compiling...
-          </div>
+          <EmployeeDirectory
+            employees={employees}
+            userRole={user.role}
+            authToken={authToken}
+            onRefresh={fetchAllData}
+          />
         );
+      case "attendance":
+        return (
+          <AttendanceModule
+            authToken={authToken}
+            userRole={user.role}
+            userId={user.id}
+            userName={user.name}
+          />
+        );
+      case "payroll":
+        return (
+          <PayrollModule
+            authToken={authToken}
+            userRole={user.role}
+          />
+        );
+      case "performance":
+        return (
+          <PerformanceTracking
+            authToken={authToken}
+            userRole={user.role}
+            userName={user.name}
+          />
+        );
+      default:
+        return <div className="text-xs text-slate-500">Loading...</div>;
     }
   };
 
@@ -156,19 +179,13 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-zinc-100 overflow-hidden font-sans">
-      
-      {/* Role-aware sidebar */}
-      <Sidebar 
-        currentTab={currentTab} 
-        setTab={setCurrentTab} 
-        user={user} 
-        onLogout={handleLogout} 
+      <Sidebar
+        currentTab={currentTab}
+        setTab={setCurrentTab}
+        user={user}
+        onLogout={handleLogout}
       />
-
-      {/* Main operational workspace */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0a0a]">
-        
-        {/* Global Action Header */}
         <header className="bg-[#0a0a0a]/50 border-b border-zinc-800 h-16 flex items-center justify-between px-8 z-10 flex-shrink-0 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span className="text-sm font-sans font-black text-zinc-100 tracking-tight">
@@ -185,7 +202,6 @@ export default function App() {
               </>
             )}
           </div>
-
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-zinc-400 font-mono">
               Workspace Access: {user.role.replace("_", " ")}
@@ -193,19 +209,19 @@ export default function App() {
           </div>
         </header>
 
-        {/* Dynamic Database Status Banner */}
         {dbStatus && !dbStatus.connected && (
           <div className="bg-amber-950/20 border-b border-amber-500/10 px-8 py-3 flex items-center justify-between text-xs text-amber-300 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               <span>
-                <strong>Adaptive Offline Mode:</strong> WeHire loaded successfully, but the connection to your MongoDB Atlas cluster is currently restricted by IP Whitelisting rules. To connect persistently to your Atlas Cluster, please log into your MongoDB Atlas Console and add <code className="bg-amber-950 px-1 py-0.5 rounded text-white font-mono text-[11px]">0.0.0.0/0</code> (Allow Access from Anywhere) to your Project's IP Whitelist.
+                <strong>Adaptive Offline Mode:</strong> WeHire loaded successfully, but the connection to your MongoDB Atlas cluster is currently restricted by IP Whitelisting rules. Add{" "}
+                <code className="bg-amber-950 px-1 py-0.5 rounded text-white font-mono text-[11px]">0.0.0.0/0</code> to your Atlas IP Whitelist to connect persistently.
               </span>
             </div>
-            <a 
-              href="https://www.mongodb.com/docs/atlas/security-whitelist/" 
-              target="_blank" 
-              rel="noreferrer" 
+            <a
+              href="https://www.mongodb.com/docs/atlas/security-whitelist/"
+              target="_blank"
+              rel="noreferrer"
               className="text-[11px] font-bold text-amber-400 hover:underline px-3 py-1 rounded bg-amber-500/10 border border-amber-500/20 select-none whitespace-nowrap"
             >
               How to Whitelist IP →
@@ -213,7 +229,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Dynamic active portal contents */}
         <main className="flex-1 overflow-y-auto p-8 max-w-7xl w-full mx-auto" id="workspace-main-panel">
           {renderTabContent()}
         </main>

@@ -8,9 +8,8 @@
  *               environment variables, so every fetch becomes an absolute URL to
  *               the Render backend.
  */
-const BASE_URL = (import.meta.env.VITE_API_URL as string) || "";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
-export function apiUrl(path: string): string {
-  // Ensure no double-slash when BASE_URL is set
+export function apiUrl(path) {
   return `${BASE_URL}${path}`;
 }
