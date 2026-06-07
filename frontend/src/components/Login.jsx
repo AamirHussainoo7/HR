@@ -87,7 +87,7 @@ export default function Login({ onLoginSuccess }) {
         </div>
 
         <div className="text-xs text-zinc-600 font-mono tracking-wide">
-          SYNERGY SOLUTIONS INC &copy; 2026. SECURE SHIELDS DEPLOYED.
+          WeHire &copy; 2026
         </div>
       </div>
 
