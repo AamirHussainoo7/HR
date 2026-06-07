@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Briefcase, ArrowRight, Sparkles, Mail, Lock } from "lucide-react";
+import { Briefcase, ArrowRight, Sparkles, Mail, Lock, UserPlus } from "lucide-react";
 import { apiUrl } from "../api.js";
 
 export default function Login({ onLoginSuccess }) {
@@ -43,6 +43,28 @@ export default function Login({ onLoginSuccess }) {
     }
   };
 
+  const handlePresetLogin = async (presetEmail) => {
+    setErrorMessage("");
+    setLoading(true);
+    try {
+      const response = await fetch(apiUrl("/api/auth/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: presetEmail, password: "password" }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Preset login crashed");
+      }
+
+      onLoginSuccess(data.token, data.user);
+    } catch (err) {
+      setErrorMessage(err.message || "Failed to log in as guest persona");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div id="login-container" className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row text-zinc-100">
@@ -64,7 +86,9 @@ export default function Login({ onLoginSuccess }) {
           </p>
         </div>
 
-
+        <div className="text-xs text-zinc-600 font-mono tracking-wide">
+          SYNERGY SOLUTIONS INC &copy; 2026. SECURE SHIELDS DEPLOYED.
+        </div>
       </div>
 
       <div className="md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-[#0a0a0a]">
@@ -150,7 +174,28 @@ export default function Login({ onLoginSuccess }) {
             </button>
           </form>
 
-
+          <div className="mt-8 pt-6 border-t border-zinc-800">
+            <span className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase block text-center mb-4 font-mono">
+              ⚡ Sandbox Persona Quick Access
+            </span>
+            <div className="grid grid-cols-2 gap-2" id="demo-personas-selector">
+              {[
+                { id: "preset-superadmin", email: "superadmin@hr.com", label: "Super Admin", sub: "Full Workspace System Control", color: "text-indigo-400" },
+                { id: "preset-hrmanager", email: "hr@hr.com", label: "HR Manager", sub: "Screen, Onboard, Analytics", color: "text-emerald-400" },
+                { id: "preset-interviewer", email: "interviewer@hr.com", label: "Interviewer", sub: "Reviews, Question Scoring", color: "text-violet-400" },
+                { id: "preset-candidate", email: "david@candidate.com", label: "Candidate", sub: "Webcam Portal & Onboarding", color: "text-amber-500" },
+              ].map((p) => (
+                <button key={p.id} type="button" id={p.id} onClick={() => handlePresetLogin(p.email)}
+                  className="px-3 py-2 text-xs border border-zinc-800 hover:border-indigo-500 rounded-lg text-left bg-zinc-900/20 hover:bg-zinc-900/40 transition-all">
+                  <div className={`font-bold ${p.color}`}>{p.label}</div>
+                  <div className="text-[9px] text-zinc-500 leading-none mt-0.5">{p.sub}</div>
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-zinc-500 text-center font-mono mt-4">
+              Demo bypass credentials: password for all presets is <span className="font-semibold text-zinc-400">password</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
