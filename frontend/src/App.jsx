@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Menu } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
 import Login from "./components/Login.jsx";
 import ResumeScreening from "./components/ResumeScreening.jsx";
@@ -17,6 +18,7 @@ export default function App() {
   const [authToken, setAuthToken] = useState(localStorage.getItem("synergy_auth_token"));
   const [currentTab, setCurrentTab] = useState("screenings");
   const [dbStatus, setDbStatus] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const checkDb = () => {
@@ -184,35 +186,49 @@ export default function App() {
         setTab={setCurrentTab}
         user={user}
         onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
       />
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0a0a]">
-        <header className="bg-[#0a0a0a]/50 border-b border-zinc-800 h-16 flex items-center justify-between px-8 z-10 flex-shrink-0 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-sans font-black text-zinc-100 tracking-tight">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0a0a] min-w-0">
+        <header className="bg-[#0a0a0a]/50 border-b border-zinc-800 h-16 flex items-center justify-between px-4 md:px-8 z-10 flex-shrink-0 backdrop-blur-md">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            {/* Hamburger toggle - mobile only */}
+            <button
+              id="btn-toggle-sidebar"
+              className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all flex-shrink-0"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <span className="text-sm font-sans font-black text-zinc-100 tracking-tight truncate">
               Welcome to Portal
             </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/40" />
-            <span className="text-xs text-zinc-400 font-sans">
+            <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-indigo-500/40 flex-shrink-0" />
+            <span className="hidden sm:block text-xs text-zinc-400 font-sans truncate">
               Active Member: <span className="font-semibold text-zinc-200">{user.name}</span>
             </span>
             {user.department && (
               <>
-                <div className="w-1 h-1 rounded-full bg-zinc-800" />
-                <span className="text-xs text-zinc-500 font-sans">{user.department}</span>
+                <div className="hidden md:block w-1 h-1 rounded-full bg-zinc-800 flex-shrink-0" />
+                <span className="hidden md:block text-xs text-zinc-500 font-sans truncate">{user.department}</span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-zinc-400 font-mono">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 md:px-2.5 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-zinc-400 font-mono hidden sm:block">
               Workspace Access: {user.role.replace("_", " ")}
+            </span>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-zinc-900/80 border border-zinc-800 text-zinc-400 font-mono sm:hidden">
+              {user.role.replace("_", " ")}
             </span>
           </div>
         </header>
 
         {dbStatus && !dbStatus.connected && (
-          <div className="bg-amber-950/20 border-b border-amber-500/10 px-8 py-3 flex items-center justify-between text-xs text-amber-300 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <div className="bg-amber-950/20 border-b border-amber-500/10 px-4 md:px-8 py-3 flex items-start md:items-center justify-between gap-3 text-xs text-amber-300 backdrop-blur-sm">
+            <div className="flex items-start md:items-center gap-3">
+              <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 animate-pulse mt-1 md:mt-0" />
               <span>
                 <strong>Adaptive Offline Mode:</strong> WeHire loaded successfully, but the connection to your MongoDB Atlas cluster is currently restricted by IP Whitelisting rules. Add{" "}
                 <code className="bg-amber-950 px-1 py-0.5 rounded text-white font-mono text-[11px]">0.0.0.0/0</code> to your Atlas IP Whitelist to connect persistently.
@@ -222,14 +238,14 @@ export default function App() {
               href="https://www.mongodb.com/docs/atlas/security-whitelist/"
               target="_blank"
               rel="noreferrer"
-              className="text-[11px] font-bold text-amber-400 hover:underline px-3 py-1 rounded bg-amber-500/10 border border-amber-500/20 select-none whitespace-nowrap"
+              className="text-[11px] font-bold text-amber-400 hover:underline px-3 py-1 rounded bg-amber-500/10 border border-amber-500/20 select-none whitespace-nowrap flex-shrink-0"
             >
-              How to Whitelist IP →
+              Whitelist IP →
             </a>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-8 max-w-7xl w-full mx-auto" id="workspace-main-panel">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 max-w-7xl w-full mx-auto" id="workspace-main-panel">
           {renderTabContent()}
         </main>
       </div>

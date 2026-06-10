@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import { connectDB, User, Resume, Interview, Template, Onboarding, Employee, Attendance, LeaveRequest, Payroll, Performance, hashPassword, isConnectedToMongo, lastMongoError } from "./db.js";
@@ -16,11 +16,8 @@ app.get("/api/db/status", (req, res) => {
   res.json({ connected: isConnectedToMongo, error: lastMongoError });
 });
 
-const apiKey = process.env.GEMINI_API_KEY || "";
-const ai = new GoogleGenAI({
-  apiKey: apiKey,
-  httpOptions: { headers: { "User-Agent": "aistudio-build" } },
-});
+const apiKey = process.env.GROQ_API_KEY || "";
+const groq = apiKey ? new Groq({ apiKey }) : null;
 
 function generateToken(userId, role) {
   const payload = JSON.stringify({ userId, role, exp: Date.now() + 24 * 3600 * 1000 });
@@ -191,9 +188,9 @@ app.post("/api/resumes/screen/:id", requireRole(["superadmin", "hr_manager", "in
       return res.json({ success: true, message: "AI processed (Fallback Mode)", resume });
     }
     try {
-      const prompt = `You are an expert technical recruiter. Given this resume content and the job description for a "${resume.jobTitle}" position, construct a rigorous screening evaluation.\n\nResume Text content:\n"${resume.rawText}"\n\nYou MUST output JSON ONLY matching this format:\n{\n  "score": 0-100,\n  "summary": "exactly 2-sentence feedback",\n  "topSkills": ["array of detected keywords"],\n  "redFlags": ["detected gaps"],\n  "recommendation": "shortlist" or "maybe" or "reject"\n}`;
-      const response = await ai.models.generateContent({ model: "gemini-2.0-flash", contents: prompt, config: { responseMimeType: "application/json" } });
-      const result = JSON.parse((response.text || "{}").trim());
+      const prompt = `You are an expert technical recruiter. Given this resume content and the job description for a "${resume.jobTitle}" position, construct a rigorous screening evaluation.\n\nResume Text content:\n"${resume.rawText}"\n\nYou MUST output a JSON object ONLY matching this format:\n{\n  "score": 0-100,\n  "summary": "exactly 2-sentence feedback",\n  "topSkills": ["array of detected keywords"],\n  "redFlags": ["detected gaps"],\n  "recommendation": "shortlist" or "maybe" or "reject"\n}`;
+      const chatResponse = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" }, temperature: 0.3 });
+      const result = JSON.parse(chatResponse.choices[0]?.message?.content || "{}");
       resume.aiScore = typeof result.score === "number" ? result.score : 70;
       resume.aiSummary = result.summary || "Completed automated profile matches.";
       resume.skills = Array.isArray(result.topSkills) ? result.topSkills : [];
@@ -261,10 +258,11 @@ app.get("/api/interviews/:id/questions", requireRole(["superadmin", "hr_manager"
     if (!interview) return res.status(404).json({ error: "Interview scheduled item not found" });
     if (!apiKey) return res.json(interview.questions);
     try {
-      const prompt = `Generate exactly 4 behavioral interview questions for a professional specialized in "${interview.jobRole}".\nEnsure they target technical leadership, systemic operations, speed, and cross-functional team delivery.\n\nYou MUST output JSON ONLY matching this format:\n[\n  { "questionId": "bq1", "questionText": "Question 1 core text content" },\n  { "questionId": "bq2", "questionText": "Question 2 core text content" },\n  { "questionId": "bq3", "questionText": "Question 3 core text content" },\n  { "questionId": "bq4", "questionText": "Question 4 core text content" }\n]`;
-      const response = await ai.models.generateContent({ model: "gemini-2.0-flash", contents: prompt, config: { responseMimeType: "application/json" } });
-      const parsedQuestions = JSON.parse(response.text || "[]");
-      if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
+      const prompt = `Generate exactly 4 behavioral interview questions for a professional specialized in "${interview.jobRole}".\nEnsure they target technical leadership, systemic operations, speed, and cross-functional team delivery.\n\nYou MUST output a JSON object ONLY matching this format:\n{\n  "questions": [\n    { "questionId": "bq1", "questionText": "Question 1 core text content" },\n    { "questionId": "bq2", "questionText": "Question 2 core text content" },\n    { "questionId": "bq3", "questionText": "Question 3 core text content" },\n    { "questionId": "bq4", "questionText": "Question 4 core text content" }\n  ]\n}`;
+      const chatResponse = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" }, temperature: 0.3 });
+      const parsed = JSON.parse(chatResponse.choices[0]?.message?.content || "{}");
+      const parsedQuestions = Array.isArray(parsed.questions) ? parsed.questions : [];
+      if (parsedQuestions.length > 0) {
         const updatedQuestions = parsedQuestions.map((q, idx) => ({ questionId: q.questionId || `bq_${idx + 1}`, questionText: q.questionText || "Behavioral review inquiry" }));
         interview.questions = updatedQuestions;
         await interview.save();
@@ -294,9 +292,9 @@ app.post("/api/interviews/:id/response", requireRole(["superadmin", "hr_manager"
       return res.json({ success: true, response: simulatedResponse });
     }
     try {
-      const prompt = `Evaluate this behavioral answer to an interview question for a "${interview.jobRole}" position.\n\nQuestion: "${questionText}"\nCandidate's Answer: "${transcriptText}"\n\nProvide a structured evaluation score (0 to 100) and actionable recruiter feedback.\n\nYou MUST output JSON ONLY matching this format:\n{\n  "score": 0-100,\n  "feedback": "2 or 3 sentences summarizing candidate's alignment, clarity, and competence."\n}`;
-      const response = await ai.models.generateContent({ model: "gemini-2.0-flash", contents: prompt, config: { responseMimeType: "application/json" } });
-      const parsedEval = JSON.parse(response.text || "{}");
+      const prompt = `Evaluate this behavioral answer to an interview question for a "${interview.jobRole}" position.\n\nQuestion: "${questionText}"\nCandidate's Answer: "${transcriptText}"\n\nProvide a structured evaluation score (0 to 100) and actionable recruiter feedback.\n\nYou MUST output a JSON object ONLY matching this format:\n{\n  "score": 0-100,\n  "feedback": "2 or 3 sentences summarizing candidate's alignment, clarity, and competence."\n}`;
+      const chatResponse = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" }, temperature: 0.3 });
+      const parsedEval = JSON.parse(chatResponse.choices[0]?.message?.content || "{}");
       const aiResponse = { questionId, videoUrl: inlineAudioBase64 ? "user_webcam_input_feed" : "recorded_candidate_session", transcript: transcriptText, aiScore: typeof parsedEval.score === "number" ? parsedEval.score : 75, aiFeedback: parsedEval.feedback || "Standard answer completed successfully." };
       interview.responses = interview.responses.filter(r => r.questionId !== questionId);
       interview.responses.push(aiResponse);
@@ -392,9 +390,10 @@ app.post("/api/onboarding/start", requireRole(["superadmin", "hr_manager"]), asy
     if (apiKey) {
       try {
         const prompt = `Write a professional, exceptionally warm, personalized welcome email for an employee joining the company.\nEmployee Name: "${employeeName}"\nRole: "${employeeRole}"\nDepartment: "${employeeDepartment || "Operations"}"\n\nDo not include any placeholders. Draft the email directly from the "Human Resources Team". Keep the length around 120-150 words.`;
-        const response = await ai.models.generateContent({ model: "gemini-2.0-flash", contents: prompt });
-        if (response.text) welcomeBodyText = response.text.trim();
-      } catch (err) { console.error("Gemini failed onboarding welcome email draft:", err); }
+        const chatResponse = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], temperature: 0.7 });
+        const emailText = chatResponse.choices[0]?.message?.content;
+        if (emailText) welcomeBodyText = emailText.trim();
+      } catch (err) { console.error("Groq failed onboarding welcome email draft:", err); }
     }
     const newOnboarding = new Onboarding({ id: "ob_" + Math.random().toString(36).substr(2, 9), employeeId: candidateId || "u_guest_hire", employeeName, employeeEmail: employeeEmail.toLowerCase(), employeeRole, employeeDepartment: employeeDepartment || "Operations", templateId, tasks: compiledTasks, startDate: baseDate.toISOString(), completionPct: 0, welcomeEmailText: welcomeBodyText });
     await newOnboarding.save();
