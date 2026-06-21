@@ -49,7 +49,7 @@ Powered by **Google Gemini 2.0**, WeHire scores resumes against job roles, gener
 > Paste raw resume text, select a target position, and hit **Inject Profile to Queue**. Gemini returns an alignment score, detected skills, red flags, and a full CV summary. Bulk AI screening is supported for entire candidate pools.
 
 ![Resume Screening](assest/Screenshot%20(1083).png)
-
+(assest/Screenshot 2026-06-22 043923.png)
 ---
 
 ### 🎥 Video Interviews
